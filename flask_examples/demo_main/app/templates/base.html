@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <title>{{ title }}</title>
+    </head>
+    <body>
+        <menu>
+            <li><a href="/index">Home</a></li>
+            <li><a href="/info">Info</a></li>
+            {% if current_user.is_anonymous %}
+            <li><a href="/login">Login</a></li>
+            <li><a href="/register">Registration</a></li>
+            {% else %}
+            <li><a href="/logout">Loout</a></li>
+            {% endif %}
+
+        </menu>
+        <hr>
+        {% block content %}
+        {% endblock %}
+    </body>
+</html>
