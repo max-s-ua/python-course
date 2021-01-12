@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block app_content %}
+
+<ul class="nav nav-tabs">
+    
+    {% for page in range(1, total_pages+1) %}
+        {% if  page == page_num %}
+        <li class="nav-item">
+            <a class="nav-link active" style="background: lightblue;" href="/post_page/{{page}}"> {{page}}</a>
+        </li>
+        {% else %}
+        <li class="nav-item">
+            <a class="nav-link" href="/post_page/{{page}}">{{page}}</a>
+        </li>
+        {% endif %}
+
+    {% endfor %} 
+</ul>
+
+{% for post in posts %}
+<div class="panel panel-default">
+    <div class="panel-body" style="padding: 10px;">    
+        <div class="row">
+            <div class="col-md-3">
+                <h5>
+                    Posted: {{post.get_create_time()}}
+                </h5>
+
+            </div>
+            
+            {% if post.author.username == current_user.username%}
+            <div class="navbar navbar=default">
+                <div style="float:right">
+                    <a class="btn btn-primary" href="/edit_post?post_id={{post.id}}">Edit</a>
+                </div>                
+            </div>
+            {% endif %}
+        </div>
+        <div class="row">
+            <div class="col-md-2">
+                <img src="{{ post.author.avatar(36) }}">
+                <a href="{{ url_for('user', username=post.author.username) }}">{{ post.author.username }}</a>
+            </div>
+            <div class="col-md-10">
+                <b>{{ post.title }}</b>
+                <p>{{ post.body }}</p>
+            </div>
+        </div>
+        
+        <div class="navbar navbar=default" style="float:right">
+
+                <div>
+                    <h4>
+                        Likes: {{post.get_likes_count()}}
+                    </h4>
+                </div>
+                {% if post.liked_by_user(current_user) %}                               
+                <a class="btn btn-primary" href="/post_page/dislike?post_id={{post.id}}">Dis</a>
+                {% else %}
+                <a class="btn btn-primary" href="/post_page/like?post_id={{post.id}}">Like</a>
+                {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<ul class="nav nav-tabs">
+
+    {% for page in range(1, total_pages+1) %}
+        {% if  page == page_num %}
+        <li class="nav-item">
+            <a class="nav-link active" style="background: lightblue;" href="/post_page/{{page}}"> {{page}}</a>
+        </li>
+        {% else %}
+        <li class="nav-item">
+            <a class="nav-link" href="/post_page/{{page}}">{{page}}</a>
+        </li>
+        {% endif %}
+
+    {% endfor %} 
+</ul>
+
+
+{% endblock %}

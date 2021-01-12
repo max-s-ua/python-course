@@ -7,14 +7,13 @@
 {% block navbar %}
     <nav class="navbar navbar=default" style="padding: 15px;">
         <a href="/index">Home</a>
-        <a href="/info">Info</a>
         <div style="float:right">
             {% if current_user.is_anonymous %}
-            <a href="/login">Login</a>
-            <a href="/register">Registration</a>
+            <a href="/sign_in">Sign In</a>
+            <a href="/sign_up">Sign Up</a>
             {% else %}
             <a class="btn btn-primary " href="/create_article">Create article</a>
-            <a href="/logout">Logout</a>
+            <a href="/sign_out">Sign Out</a>
             <a href="/user/{{ current_user.username }}">UserInfo</a>
             {% endif %}
         </div>
@@ -22,6 +21,16 @@
 {% endblock %}
 
 {% block content %}
+    <div class="panel panel-default">
+        <div class="panel-body">
+            {% if current_user.is_anonymous  %}
+                <h4>Hi, Guest!!!!</h4>
+            {% else %}
+                <h4>Hi, {{current_user.username }}!!!!</h4>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="container">
         {% with messages = get_flashed_messages() %}
             {% if messages %}

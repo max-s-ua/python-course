@@ -1,5 +1,5 @@
 from app import app, db
-from flask import render_template, flash, redirect, url_for, request
+from flask import render_template, flash, redirect, url_for, request, abort
 from flask_login import login_user, logout_user, current_user, login_required
 
 from app.forms.login import LoginForm
@@ -9,7 +9,88 @@ from app.forms.article import ArticleForm
 from app.models import User, Article
 from datetime import datetime
 
-counter = 0
+from math import ceil
+
+@app.route('/post_page/<page>')
+@login_required
+def post_page(page):
+    page_num = int(page)
+    posts_count = int(Article.query.count())
+    posts_per_page = 10
+    total_pages = ceil(posts_count / posts_per_page)
+    if page_num not in range(1, total_pages + 1):
+        abort(404)
+
+    if page_num*10 < posts_count:
+        begin = (page_num - 1) * posts_per_page
+        end = begin + posts_per_page - 1
+    else:
+        begin = (page_num - 1) * posts_per_page
+        end = posts_count - 1
+
+    posts = Article.query.order_by(Article.created_at.desc()).all()
+
+    #return 'page {}, total posts: {}'.format(p, posts_count)
+
+    if current_user.is_authenticated:
+        name = current_user.username
+    else:
+        name = 'Guest'
+
+    return render_template('posts.html', title='Posts, page {}'.format(page_num),
+     user={'name':name}, posts=posts[begin:(end+1)], page_num=page_num, total_pages=total_pages)
+
+
+@app.route('/post_page/like')
+@login_required
+def like():
+    post_id = request.args.get('post_id')
+    user = current_user
+    
+    post = Article.query.filter_by(id=post_id).first_or_404()
+    if user not in post.likes:
+        post.likes.append(user)
+        db.session.commit()
+    
+    return redirect(url_for('index'))
+
+@app.route('/post_page/dislike')
+@login_required
+def dislike():
+    post_id = request.args.get('post_id')
+    user = current_user
+    
+    post = Article.query.filter_by(id=post_id).first_or_404()
+    if user in post.likes:
+        post.likes.remove(user)
+        db.session.commit()
+    
+    return redirect(url_for('index'))
+
+@app.route('/edit_post',methods=['GET','POST'])
+@login_required
+def edit_post():
+    post_id = request.args.get('post_id')
+    post = Article.query.filter_by(id=post_id).first_or_404()
+    user = current_user
+
+    if user.id != post.user_id:
+        return redirect(url_for('index'))
+
+        
+    form = ArticleForm()
+    if form.validate_on_submit():
+        post.title =  form.title.data
+        post.body = form.post.data
+        #post.created_at = datetime.utcnow
+        db.session.commit()
+        flash('Changes saved')
+        return redirect(url_for('index'))
+    elif request.method == 'GET':
+        form.title.data = post.title
+        form.post.data = post.body
+    return render_template('create_article.html', title='Edit Post', form=form)
+
 
 @app.before_request
 def before_request():
@@ -22,8 +103,10 @@ def before_request():
 def index():
     #print(current_user)
     #return 'Hello, world'
+
+    return redirect('/post_page/1')
     
-    if current_user.is_authenticated:
+    '''if current_user.is_authenticated:
         name = current_user.username
         posts = current_user.followed_posts()
     else:
@@ -31,16 +114,9 @@ def index():
         posts = Article.query.order_by(Article.created_at.desc()).all()
     
     return render_template('index.html', title='Home page', user={'name':name}, posts=posts)
+    '''
 
-@login_required
-@app.route('/info')
-def info():
-    global counter
-    counter += 1
-    #return 'Hello, times: {}'.format(counter)
-    return render_template('info.html', tille='Info page', counter=counter)
-
-@app.route('/login', methods=['GET','POST'])
+@app.route('/sign_in', methods=['GET','POST'])
 def login():
     form = LoginForm()
     if form.validate_on_submit():
@@ -50,18 +126,18 @@ def login():
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username of password')
-            return redirect(url_for('login'))
+            return redirect(url_for('sign_in'))
         login_user(user, remember=form.remember_me.data)
         return redirect(url_for('index'))
 
-    return render_template('login.html', tilte='Sign in', form=form)
+    return render_template('sign_in.html', tilte='Sign in', form=form)
 
-@app.route('/logout')
+@app.route('/sign_out')
 def loglout():
     logout_user()
     return redirect(url_for('index'))
 
-@app.route('/register', methods=['GET','POST'])
+@app.route('/sign_up', methods=['GET','POST'])
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -73,9 +149,9 @@ def register():
         db.session.add(user)
         db.session.commit()
         flash('user registered')
-        return redirect(url_for('login'))
+        return redirect(url_for('sign_in'))
     
-    return render_template('register.html', title='Registration', form=form)
+    return render_template('sign_up.html', title='Sign Up', form=form)
 
 @app.route('/user/<username>')
 @login_required
